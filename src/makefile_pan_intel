@@ -1,0 +1,69 @@
+# make sure the intel module is loaded:
+#     `module load intel/2017a`
+
+CXX = icpc
+CC = icc
+FC = ifort
+GCCLIBDIR = #$(EBROOTGCCCORE)/lib64
+CUR_DIR = $(CURDIR)
+LIBS_DIR = $(CURDIR)/libs
+RUN_MNG_DIR = $(CURDIR)/libs/run_managers
+EXE_DIR = ../exe/pan_intel
+INCLUDES := '-I $(LIBS_DIR)/opt -I $(LIBS_DIR)/Eigen -I $(LIBS_DIR)/common -I $(LIBS_DIR)/run_managers/abstract_base -I $(RUN_MNG_DIR)/yamr -I $(RUN_MNG_DIR)/serial -I $(RUN_MNG_DIR)/genie_wrapper -I $(RUN_MNG_DIR)/external  -I $(RUN_MNG_DIR)/wrappers  -I $(LIBS_DIR)/pestpp_common -I $(LIBS_DIR)/linear_analysis'
+
+LIBLDIR = ""
+LIBS := "$(LIBS_DIR)/opt/libopt.a $(LIBS_DIR)/pestpp_common/libpestpp_com.a $(LIBS_DIR)/propack/libpropack.a $(RUN_MNG_DIR)/wrappers/librm_wrappers.a $(RUN_MNG_DIR)/yamr/librm_yamr.a $(RUN_MNG_DIR)/serial/librm_serial.a $(RUN_MNG_DIR)/external/librm_external.a $(RUN_MNG_DIR)/genie_wrapper/librm_genie_wrapper.a $(RUN_MNG_DIR)/abstract_base/librm_abstract.a $(LIBS_DIR)/mio/libmio.a $(LIBS_DIR)/common/libcommon.a $(LIBS_DIR)/linear_analysis/liblinear_analysis.a -lifcore -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_lapack95_ilp64.a $(MKLROOT)/lib/intel64/libmkl_blas95_ilp64.a $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl"
+
+CFLAGS := '-pthread  -Wl,--no-as-needed -O2 -std=c++11 -fpermissive' 
+FFLAGS := '-O2 -fpp -free -cxxlib'
+PROPACK_FFLAGS := '-O2'
+LFLAGS := '-static'
+
+all:
+	rm -rf $(EXE_DIR)/*
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/mio -f makefile_linux libmio.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/opt -f makefile_linux libopt.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/common -f makefile_linux libcommon.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/abstract_base -f makefile_linux librm_abstract.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/external -f makefile_linux librm_external.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/serial -f makefile_linux librm_serial.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/yamr -f makefile_linux librm_yamr.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/genie_wrapper -f makefile_linux librm_genie_wrapper.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/run_managers/wrappers -f makefile_linux librm_wrappers.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${PROPACK_FFLAGS} INCLUDES=${INCLUDES} -C libs/propack -f makefile_linux libpropack.a
+	#make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/pest_routines -f makefile_linux libpest_routines.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} LIBS={$(LIBS) -C libs/pestpp_common -f makefile_linux libpestpp_com.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=${INCLUDES} -C libs/linear_analysis -f makefile_linux liblinear_analysis.a
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LFLAGS=$(LFLAGS) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C programs/pest++ -f makefile_linux pestpp
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LFLAGS=$(LFLAGS) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C programs/gsa -f makefile_linux gsa
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C programs/pestpp-pso -f makefile_linux psopp
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C tests/run_manager_fortran_test -f makefile_pan fortran_test
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LFLAGS=$(LFLAGS) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C utilities/sweep -f makefile_linux sweep
+	make FC=${FC} CC=${CC} CXX=${CXX} CFLAGS=${CFLAGS} FFLAGS=${FFLAGS} INCLUDES=$(INCLUDES) LFLAGS=$(LFLAGS) LIBS=$(LIBS) GCCLIBDIR=$(GCCLIBDIR) LIBLDIR=$(LIBLDIR) LIBS=$(LIBS) -C programs/pestpp-opt -f makefile_linux pestpp-opt
+	
+	mkdir -p $(EXE_DIR)
+	cp programs/pest++/pestpp $(EXE_DIR)
+	cp programs/gsa/gsa $(EXE_DIR)
+	cp programs/pestpp-opt/pestpp-opt $(EXE_DIR)
+	cp utilities/sweep/sweep $(EXE_DIR)
+
+
+clean:
+	rm -rf $(EXE_DIR)/*
+	-make -C libs/opt -f makefile_linux clean
+	-make -C libs/mio -f makefile_linux clean
+	-make -C libs/common -f makefile_linux clean
+	-make -C libs/run_managers/abstract_base -f makefile_linux clean
+	-make -C libs/run_managers/serial -f makefile_linux clean
+	-make -C libs/run_managers/external -f makefile_linux clean
+	-make -C libs/run_managers/yamr -f makefile_linux clean
+	-make -C libs/run_managers/genie_wrapper -f makefile_linux clean
+	-make -C libs/run_managers/wrappers -f makefile_linux clean
+	-make -C tests/run_manager_fortran_test -f makefile_linux clean
+	-make -C libs/propack -f makefile_linux clean
+	-make -C libs/pestpp_common -f makefile_linux clean
+	-make -C libs/linear_analysis -f makefile_linux clean
+	-make -C programs/pest++ -f makefile_linux clean
+	-make -C programs/gsa -f makefile_linux clean
+	-make -C programs/pestpp-opt -f makefile_linux clean
+	-make -C utilities/sweep -f makefile_linux clean
